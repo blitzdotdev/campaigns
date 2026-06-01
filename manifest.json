@@ -1,0 +1,26 @@
+{
+  "$schema": "./schema/campaign-manifest.schema.json",
+  "version": 1,
+  "campaigns": [
+    {
+      "name": "marketing",
+      "skill_name": "blitz-marketing-campaign",
+      "title": "Personal social-media marketing",
+      "description": "Forked Blitz app with a Gmail-shaped feed of pending drafts. Claude drafts X/Reddit replies, the user reviews + sends, feedback flows back into the next research cycle.",
+      "trigger_phrases": [
+        "set up marketing campaign",
+        "start a new marketing campaign",
+        "set up a blitz marketing campaign",
+        "blitz marketing campaign",
+        "reddit marketing campaign",
+        "x marketing campaign",
+        "twitter marketing campaign",
+        "social media marketing campaign"
+      ],
+      "platforms": ["x", "reddit"],
+      "depends_on": ["agent-socket-connect"],
+      "skill_path": "campaigns/marketing/SKILL.md",
+      "fork_template_slug": "autolead"
+    }
+  ]
+}
