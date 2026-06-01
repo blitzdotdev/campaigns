@@ -6,7 +6,7 @@
       "name": "marketing",
       "skill_name": "blitz-marketing-campaign",
       "title": "Personal social-media marketing",
-      "description": "Forked Blitz app with a Gmail-shaped feed of pending drafts. Claude drafts X/Reddit replies, the user reviews + sends, feedback flows back into the next research cycle.",
+      "description": "Run social-media marketing operations through your agent. Your agent drafts X and Reddit replies; you review and send. The skill has memory that improves over time as the agent learns your voice and judgment through cooperation. Eventually it can run autonomously.",
       "trigger_phrases": [
         "set up marketing campaign",
         "start a new marketing campaign",

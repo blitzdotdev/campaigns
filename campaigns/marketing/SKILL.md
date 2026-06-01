@@ -1,12 +1,14 @@
 ---
 name: blitz-marketing-campaign
 description: >-
-  Personal social-media marketing. The user has a forked Blitz app showing a
-  Gmail-shaped feed of pending drafts; this skill is the brain that drafts,
-  revises, and sends from any Claude Code session. Two daily commands: **draft**
-  (research + post N new candidates) and **send** (redraft any pending-revision
-  items, then post all pending-send items). Triggers: "set up marketing campaign",
-  "draft N messages", "draft a reply to <url>", "send".
+  Social-media marketing operations the user conducts with their agent. The
+  agent drafts X and Reddit replies; the user reviews and sends. A skill with
+  memory that improves over time: every send, reject, and revise teaches the
+  agent the user's voice and judgment. Eventually runs autonomously. Two daily
+  commands: **draft** (research + post N new candidates) and **send** (redraft
+  any pending-revision items, then post all pending-send items). Triggers:
+  "set up marketing campaign", "draft N messages", "draft a reply to <url>",
+  "send".
 metadata:
   config_path: ~/.claude/skills/blitz-marketing-campaign/config.json
   depends_on: agent-socket-connect

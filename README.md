@@ -1,8 +1,8 @@
 # blitzdotdev/campaigns
 
-Skill bundles for [Blitz](https://blitz.dev) campaigns. PR a new directory under `campaigns/`, merge, and `blitz.dev` picks it up within 5 minutes.
+Blitz Campaigns are operations you conduct with your agent to achieve a goal. Your agent improves at operating the campaign as it learns about you and your vision through continued cooperation. Eventually, your agent can autonomously conduct campaign operations.
 
-A campaign is a Blitz app plus the skill that runs it. Triggered by a user sentence like "set up a marketing campaign".
+Each campaign is a skill with memory that improves over time. PR a new directory under `campaigns/`, merge, and `blitz.dev` serves it within 5 minutes.
 
 ## Add one
 
