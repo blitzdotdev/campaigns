@@ -184,7 +184,7 @@
       comment syntax for the file format. We also recognize an "NOTICE"
       file as part of the distribution.
 
-   Copyright 2026 blitzdotdev contributors
+   Copyright 2026 Minjune Song and Palash Bansal (https://blitz.dev)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
