@@ -64,7 +64,42 @@ Triggered by "set up marketing campaign" or any first-time invocation when `conf
 
    `MARKETING_API_TOKEN` is the API surface this skill uses; `UI_PASSWORD` is what the user types in the browser to log into their fork. Both go into `config.json` (next step) so the agent can hand them back to the user later without making them remember.
 
-5. **Save config.json.** Write to `~/.claude/skills/blitz-marketing-campaign/config.json`:
+5. **Detect platform handles via agent-socket-connect — do not ask cold.** The user's X and Reddit handles populate `config.user.{x,reddit}` and gate the duplicate-reply check in Draft. Most users are already logged into these platforms in their dedicated agent-socket browser window, so detect first, ask only on miss.
+
+   For each supported platform (X, Reddit), mint or reuse an agent-socket session via the `agent-socket-connect` skill, open the platform's home page, then `eval` a selector to read the logged-in handle:
+
+   - **X** — open `https://x.com/home` (use `/x_open_home` if the session exposes it, else `/navigate`), then:
+
+     ```js
+     // sidebar profile link: href is "/<handle>"
+     (() => {
+       const a = document.querySelector('[data-testid="AppTabBar_Profile_Link"]');
+       return a ? a.getAttribute('href').replace(/^\//, '') : null;
+     })()
+     ```
+
+   - **Reddit** — `/navigate { url: "https://www.reddit.com" }`, then:
+
+     ```js
+     // new reddit (shreddit) exposes the logged-in user on the root element
+     (() => {
+       const app = document.querySelector('shreddit-app');
+       return app?.getAttribute('user-id') ? (app.getAttribute('username') || null) : null;
+     })()
+     ```
+
+     Fallback (if the shreddit selector returns null but the page rendered): `/navigate { url: "https://old.reddit.com" }`, then `(() => window?.r?.config?.logged || null)()`.
+
+   Handling the results:
+
+   - **Detected on both platforms**: confirm in one message — "I detected `@<x_handle>` on X and `u/<reddit_handle>` on Reddit. Correct?" — and proceed on yes. Don't re-prompt per platform.
+   - **Detected on one, null on the other**: save the detected one, tell the user "I couldn't detect a logged-in user on `<platform>` in the agent-socket browser. Either log in there now and reply 'retry', or tell me your `<platform>` handle, or say 'skip' and I'll only operate on `<other-platform>`."
+   - **Both null**: same prompt, both platforms. Don't write config.json until at least one handle is set.
+   - **Detected but user says wrong**: trust the user, overwrite with what they say.
+
+   Why this is a hard rule: Reddit's per-thread profile links match the OP of the thread you're reading, not the logged-in user, so any later scrape-from-DOM is unreliable. The `config.user` block written in step 6 is the only trusted handle source for the rest of the skill (duplicate-reply check, /with_replies reads, etc.) — and it has to be right.
+
+6. **Save config.json.** Write to `~/.claude/skills/blitz-marketing-campaign/config.json`:
 
    ```json
    {
@@ -82,24 +117,24 @@ Triggered by "set up marketing campaign" or any first-time invocation when `conf
 
    The `user` block is the trusted source for the user's identity on each platform — the duplicate-reply check in Research reads from here instead of guessing from page DOM (Reddit's profile-link selector matches the OP, not the logged-in user). Per-platform handles can differ for the same person, so collect both. Set file permissions to 0600.
 
-6. **Run the interview** (see "Interview" below).
+7. **Run the interview** (see "Interview" below). Skip Q3 ("which platforms") for any platform where step 5 detected a handle — that's the implicit affirmative. Only ask Q3 for platforms that were null AND the user didn't say "skip" on.
 
-7. **Synthesize the voice doc** from the interview answers + any files/URLs the user pointed at.
+8. **Synthesize the voice doc** from the interview answers + any files/URLs the user pointed at.
 
-8. **Present back to the user** for confirmation.
+9. **Present back to the user** for confirmation.
 
-9. **POST the voice doc to the fork**:
+10. **POST the voice doc to the fork**:
 
-   ```bash
-   curl -X POST "<endpoint>/api/skill" \
-     -H "Authorization: Bearer <api_token>" \
-     -H "Content-Type: application/json" \
-     -d '{"content": "...", "skill_name": "marketing-campaign-voice", "notes": "..."}'
-   ```
+    ```bash
+    curl -X POST "<endpoint>/api/skill" \
+      -H "Authorization: Bearer <api_token>" \
+      -H "Content-Type: application/json" \
+      -d '{"content": "...", "skill_name": "marketing-campaign-voice", "notes": "..."}'
+    ```
 
-   Response includes a `hash`. Save the hash, all future drafts reference it as `skill_snapshot_hash`.
+    Response includes a `hash`. Save the hash, all future drafts reference it as `skill_snapshot_hash`.
 
-10. **Done.** Tell the user:
+11. **Done.** Tell the user:
     - the URL of their fork (`<endpoint>`),
     - their `ui_password` (so they can log in to the UI on first visit),
     - the daily commands they can run ("draft N" / "send").
@@ -112,7 +147,7 @@ Ask one at a time, wait for the answer, then move on.
 
 2. **Where can I read your voice?** Multi: paths to local repos, individual files, or URLs. e.g., "~/Documents/notes/, ~/projects/blitz-marketing/plans/, https://github.com/<user>." Use the Read tool for local paths, fetch tool for URLs. Skim, don't deep-read; ~10 files max. Extract: tone, sentence rhythm, characteristic phrases, banned words, what they care about.
 
-3. **Which platforms should I work on?** Multi-select from: X (twitter.com), Reddit, LinkedIn, Hacker News, Discord. Default to X if unclear.
+3. **Which platforms should I work on?** Multi-select from: X (twitter.com), Reddit, LinkedIn, Hacker News, Discord. Default to X if unclear. **Skip this question for X / Reddit if step 5 already detected a logged-in handle** (treat detection as the implicit affirmative). Only ask it for the platforms step 5 couldn't auto-confirm, plus the ones it doesn't cover (LinkedIn, HN, Discord).
 
 4. **What outcomes matter?** Multi-select with custom: signups for product, awareness/brand, qualified feedback users, community engagement, customer leads, recruiting. The drafts should optimize for these.
 
