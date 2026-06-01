@@ -43,17 +43,26 @@ Triggered by "set up marketing campaign" or any first-time invocation when `conf
 
 3. **Get the agent token from `agent_link`.** It's encoded in the URL: `/agent/<token>/agents.md` → token is `tp_…`.
 
-4. **Generate an API token for the deployed app.** This is separate from the agent token (agent token = Blitz platform ops; api token = `/api/*` on the deployed app).
+4. **Set BOTH worker secrets — required, do not skip.** The deployed UI loads with a "UI_PASSWORD not configured on the worker" error if `UI_PASSWORD` is missing, and every `/api/*` call 503s if `MARKETING_API_TOKEN` is missing. Generate and PUT both before continuing.
 
    ```bash
-   # 24 hex bytes
+   # api_token: gates /api/* (calls from this skill).
    API_TOKEN=$(openssl rand -hex 24)
-   # Set as a project secret so the worker reads it from c.env.MARKETING_API_TOKEN
+   # ui_password: gates the human-facing UI. Short so it's easy to type / share.
+   UI_PASSWORD=$(openssl rand -hex 4)
+
    curl -X PUT "https://blitz.dev/api/v1/projects/<slug>/secrets/MARKETING_API_TOKEN" \
      -H "Authorization: Bearer <agent_token>" \
      -H "Content-Type: application/json" \
      -d "{\"value\":\"$API_TOKEN\"}"
+
+   curl -X PUT "https://blitz.dev/api/v1/projects/<slug>/secrets/UI_PASSWORD" \
+     -H "Authorization: Bearer <agent_token>" \
+     -H "Content-Type: application/json" \
+     -d "{\"value\":\"$UI_PASSWORD\"}"
    ```
+
+   `MARKETING_API_TOKEN` is the API surface this skill uses; `UI_PASSWORD` is what the user types in the browser to log into their fork. Both go into `config.json` (next step) so the agent can hand them back to the user later without making them remember.
 
 5. **Save config.json.** Write to `~/.claude/skills/blitz-marketing-campaign/config.json`:
 
@@ -63,6 +72,7 @@ Triggered by "set up marketing campaign" or any first-time invocation when `conf
      "endpoint": "https://<new-slug>.app.blitz.dev",
      "agent_token": "tp_...",
      "api_token": "<API_TOKEN>",
+     "ui_password": "<UI_PASSWORD>",
      "user": {
        "x": "<x-handle without @>",
        "reddit": "<reddit-handle without u/>"
@@ -89,7 +99,10 @@ Triggered by "set up marketing campaign" or any first-time invocation when `conf
 
    Response includes a `hash`. Save the hash, all future drafts reference it as `skill_snapshot_hash`.
 
-10. **Done.** Tell the user the URL of their fork and what daily commands they can run.
+10. **Done.** Tell the user:
+    - the URL of their fork (`<endpoint>`),
+    - their `ui_password` (so they can log in to the UI on first visit),
+    - the daily commands they can run ("draft N" / "send").
 
 ### Interview (5 questions)
 
@@ -239,7 +252,8 @@ Steps:
 | Symptom | Cause | Fix |
 |---|---|---|
 | `401 unauthorized` on /api | `api_token` in config doesn't match `MARKETING_API_TOKEN` secret on worker | re-set the secret, update config.json |
-| `503 MARKETING_API_TOKEN not configured` | secret not set on worker | use agent_token to PUT the secret |
+| `503 MARKETING_API_TOKEN not configured` | secret not set on worker | use agent_token to PUT the secret (step 4) |
+| `UI_PASSWORD not configured on the worker` shown in browser | `UI_PASSWORD` secret not set on worker | generate one (`openssl rand -hex 4`), PUT to `/api/v1/projects/<slug>/secrets/UI_PASSWORD`, save into `config.json` as `ui_password`, tell the user. This is the setup step 4 the agent skipped. |
 | `app_offline` on socket call | session died | mint a new one via agent-socket-connect, optionally cache the new URL |
 | `GET /api/skill` returns null | no voice yet | run "set up marketing campaign" or re-run interview |
 | revision draft same as previous | feedback didn't actually drive change | look harder at the feedback, regenerate |
